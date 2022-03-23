@@ -1,0 +1,13 @@
+{:nrepl        {:port 8444}
+ :source-paths ["src" "test"]
+ :dependencies [[reagent "1.1.1"]
+                [net.sekao/odoyle-rules "0.11.0"]
+                [binaryage/devtools "1.0.3"]]
+ :dev-http     {3001 "resources/public"}
+ :builds       {:app {:target           :browser
+                      :js-options       {:entry-keys ["module" "browser" "main"]}
+                      :compiler-options {:infer-externs      :auto
+                                         :output-feature-set :es6}
+                      :output-dir       "resources/public/js/compiled"
+                      :asset-path       "/js/compiled"
+                      :modules          {:app {:init-fn game-of-three-d.core/init}}}}}
