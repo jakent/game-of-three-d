@@ -15,29 +15,34 @@
                          [21 5] [22 3] [22 4] [22 5] [23 2] [23 6] [25 1]
                          [25 2] [25 6] [25 7] [35 3] [35 4] [36 3] [36 4]})
 
-(defn init-cells [session start-cells size]
+(defn init-cells [session start-cells]
   (reduce (fn [session1 [x y :as coordinate]]
             (o/insert session1 coordinate {::rules/x      x
                                            ::rules/y      y
-                                           ::rules/alive? (some? (start-cells coordinate))}))
+                                           ::rules/alive? true}))
           session
-          (for [x (range size)
-                y (range size)]
-            [x y])))
+          start-cells))
 
 (defn create-session []
   (-> (reduce o/add-rule (o/->session) rules/rules)
       (o/insert ::ruleset {::foo 2333})
-      (init-cells glider 5)
+      (init-cells glider)
       o/fire-rules))
 
 (defonce app-state
          (r/atom {:session (create-session)}))
 
+(defn find-next-tick []
+  (-> (:session @app-state)
+      (o/query-all ::rules/time)
+      first
+      :total
+      inc))
+
 (defn tick []
   (swap! app-state update :session
          (fn [session] (o/fire-rules
-                         (o/insert session ::rules/time ::rules/total 1))))
+                         (o/insert session ::rules/time ::rules/total (find-next-tick)))))
   :done)
 
 (defn start-life []
