@@ -15,18 +15,16 @@
                          [21 5] [22 3] [22 4] [22 5] [23 2] [23 6] [25 1]
                          [25 2] [25 6] [25 7] [35 3] [35 4] [36 3] [36 4]})
 
-(defn init-cells [session start-cells]
-  (reduce (fn [session1 [x y :as coordinate]]
-            (o/insert session1 coordinate {::rules/x      x
-                                           ::rules/y      y
-                                           ::rules/alive? true}))
+(defn init-cells [session]
+  (reduce (fn [session1 coordinate]
+            (o/insert session1 coordinate {::rules/neighbors (set (rules/find-neighbors coordinate))}))
           session
-          start-cells))
+          gosper-glider-gun))
 
 (defn create-session []
   (-> (reduce o/add-rule (o/->session) rules/rules)
       (o/insert ::ruleset {::foo 2333})
-      (init-cells glider)
+      init-cells
       o/fire-rules))
 
 (defonce app-state
@@ -48,7 +46,7 @@
 (defn start-life []
   (tick)
   (swap! app-state assoc :interval (js/setInterval tick
-                                                   500)))
+                                                   50)))
 
 (defn pause-life [interval]
   #(do (js/clearInterval interval)

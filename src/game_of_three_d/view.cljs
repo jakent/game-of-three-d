@@ -6,24 +6,23 @@
             [odoyle.rules :as o]
             [reagent.core :as r]))
 
-(defn box [{[x y z] :id alive? :alive?}]
-  (when alive?
-    [:mesh {:position [x y z]}
-     [:boxGeometry {:args [1 1 1]}]
-     [:meshStandardMaterial {:color "white"}]]))
+(defn box [{[x y z] :coordinate}]
+  [:mesh {:position [x y z]}
+   [:boxGeometry {:args [1 1 1]}]
+   [:meshStandardMaterial {:color "white"}]])
 
 (defn grid []
   (let [session @(r/cursor state/app-state [:session])
-        cells   (o/query-all session ::rules/cell)]
+        cells   (o/query-all session ::rules/cells)]
     (into [:<>]
           (for [cell cells]
-            ^{:key (:id cell)}
+            ^{:key (:coordinate cell)}
             [box cell]))))
 
 (defn canvas []
   [:> Canvas
    [:> OrbitControls]
-   [:> Stars]
+   ;[:> Stars]
    [:ambientLight {:intensity 0.5}]
    [:spotLight {:position [10 15 10]
                 :angle    0.3}]

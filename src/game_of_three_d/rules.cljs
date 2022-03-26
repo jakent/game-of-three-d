@@ -13,92 +13,52 @@
      [:what
       [::time ::total total]]
 
-     ::cell
+     ::cells
      [:what
-      [id ::alive? alive?]]
-
-     ::neighbors
-     [:what
-      [::time ::total total]
-      [main-cell ::x main-x {:then false}]
-      [main-cell ::y main-y {:then false}]
-      [neighbor ::x neighbor-x {:then false}]
-      [neighbor ::y neighbor-y {:then false}]
-      [neighbor ::alive? alive? {:then false}]
-      :when
-      (and (#{0 1} (Math/abs (- main-x neighbor-x)))
-           (#{0 1} (Math/abs (- main-y neighbor-y)))
-           (not= [main-x main-y] [neighbor-x neighbor-y]))
-      :then
-      (do (println "::neighbors")
-          (o/reset!
-            (reduce (fn [session [id neighbor]]
-                      (o/insert session id {::neighbors (filter :alive? neighbor)}))
-                    o/*session*
-                    (group-by :main-cell
-                              (o/query-all o/*session* ::neighbors)))))]
-
-     ::create-dead-neighbors
-     [:what
-      [::time ::total total]
-      [id ::alive? alive? {:then false}]
-      :when
-      (true? alive?)
-      :then
-      (let [living (o/query-all o/*session* ::create-dead-neighbors)]
-        (o/reset!
-          (reduce (fn [session [x y :as neighbor]]
-                    (o/insert session neighbor {::x x ::y y ::alive? false}))
-                  o/*session*
-                  (remove (set (map :id living))
-                          (find-neighbors id)))))]
-
-     ::bury-dead
-     [:what
-      [id ::neighbors neighbors]
-      :when
-      (zero? (count neighbors))
-      :then
-      (do (println ::bury-dead id)
-          (-> o/*session*
-              (o/retract id ::x)
-              (o/retract id ::y)
-              (o/retract id ::alive?)
-              (o/retract id ::neighbors)
-              o/reset!))]
+      [coordinate ::neighbors neighbors]
+      :then-finally
+      (let [cells  (o/query-all o/*session* ::cells)
+            living (set (map :coordinate cells))
+            census (->> (mapcat :neighbors cells)
+                        frequencies)]
+        (println ::cells {:living living :census census})
+        (-> (o/insert! ::derived {::living living
+                                  ::census census})))]
 
      ::suffocate
      [:what
       [::time ::total total]
-      [id ::neighbors neighbors]
-      [id ::alive? alive?]
+      [::derived ::census census {:then false}]
+      [coordinate ::neighbors neighbors {:then false}]
       :when
-      (and alive?
-           (> (count neighbors) 3))
+      (> (census coordinate) 3)
       :then
-      (do (println ::suffocate id)
-          (o/reset! (o/insert o/*session* id ::alive? false)))]
+      (do (println ::suffocate coordinate)
+          (o/retract! coordinate ::neighbors))]
 
      ::starve
      [:what
       [::time ::total total]
-      [id ::neighbors neighbors]
-      [id ::alive? alive?]
+      [::derived ::census census {:then false}]
+      [coordinate ::neighbors neighbors {:then false}]
       :when
-      (and alive?
-           (< (count neighbors) 2))
+      (< (census coordinate) 2)
       :then
-      (do (println ::starve id)
-          (o/insert! id ::alive? false))]
+      (do (println ::starve coordinate)
+          (o/retract! coordinate ::neighbors))]
 
      ::born
      [:what
       [::time ::total total]
-      [id ::neighbors neighbors]
-      [id ::alive? alive?]
-      :when
-      (and (= (count neighbors) 3)
-           (not alive?))
+      [::derived ::census census {:then false}]
+      [::derived ::living living {:then false}]
       :then
-      (do (println ::born id)
-          (o/insert! id ::alive? true))]}))
+      (o/reset!
+        (reduce (fn [session [coordinate alive-neighbors]]
+                  (if (and (= 3 alive-neighbors)
+                           (not (living coordinate)))
+                    (do (println ::born coordinate)
+                        (o/insert session coordinate ::neighbors (set (find-neighbors coordinate))))
+                    session))
+                o/*session*
+                census))]}))
