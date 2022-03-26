@@ -15,15 +15,19 @@
                          [21 5] [22 3] [22 4] [22 5] [23 2] [23 6] [25 1]
                          [25 2] [25 6] [25 7] [35 3] [35 4] [36 3] [36 4]})
 
+(defn random-cells []
+  (set (take 500 (repeatedly #(vector (rand-int 100) (rand-int 100))))))
+
 (defn init-cells [session]
   (reduce (fn [session1 coordinate]
             (o/insert session1 coordinate {::rules/neighbors (set (rules/find-neighbors coordinate))}))
           session
-          gosper-glider-gun))
+          (random-cells)))
 
 (defn create-session []
   (-> (reduce o/add-rule (o/->session) rules/rules)
-      (o/insert ::ruleset {::foo 2333})
+      (o/insert ::rules/settings {::rules/ruleset [2 3 3 3]})
+      ;(o/insert ::rules/settings {::rules/ruleset [1 1 3 3]})
       init-cells
       o/fire-rules))
 

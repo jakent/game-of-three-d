@@ -29,9 +29,11 @@
      [:what
       [::time ::total total]
       [::derived ::census census {:then false}]
+      [::settings ::ruleset ruleset {:then false}]
       [coordinate ::neighbors neighbors {:then false}]
       :when
-      (> (census coordinate) 3)
+      (> (census coordinate)
+         (nth ruleset 1))
       :then
       (do (println ::suffocate coordinate)
           (o/retract! coordinate ::neighbors))]
@@ -40,9 +42,11 @@
      [:what
       [::time ::total total]
       [::derived ::census census {:then false}]
+      [::settings ::ruleset ruleset {:then false}]
       [coordinate ::neighbors neighbors {:then false}]
       :when
-      (< (census coordinate) 2)
+      (< (census coordinate)
+         (nth ruleset 0))
       :then
       (do (println ::starve coordinate)
           (o/retract! coordinate ::neighbors))]
@@ -52,10 +56,11 @@
       [::time ::total total]
       [::derived ::census census {:then false}]
       [::derived ::living living {:then false}]
+      [::settings ::ruleset ruleset {:then false}]
       :then
       (o/reset!
         (reduce (fn [session [coordinate alive-neighbors]]
-                  (if (and (= 3 alive-neighbors)
+                  (if (and (<= (nth ruleset 2) alive-neighbors (nth ruleset 3))
                            (not (living coordinate)))
                     (do (println ::born coordinate)
                         (o/insert session coordinate ::neighbors (set (find-neighbors coordinate))))
