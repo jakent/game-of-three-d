@@ -1,11 +1,21 @@
 (ns game-of-three-d.rules
   (:require [odoyle.rules :as o]))
 
-(defn find-neighbors [[x y]]
+(defn find-neighbors-2d [[x y z]]
   (for [x2 [-1 0 1]
         y2 [-1 0 1]
         :when (not= x2 y2 0)]
-    (vector (+ x x2) (+ y y2))))
+    (vector (+ x x2) (+ y y2) (or z 0))))
+
+(defn find-neighbors-3d [[x y z]]
+  (for [x2 [-1 0 1]
+        y2 [-1 0 1]
+        z2 [-1 0 1]
+        :when (not= x2 y2 z2 0)]
+    (vector (+ x x2) (+ y y2) (+ z z2))))
+
+(defn find-neighbors [coordinate]
+  (find-neighbors-3d coordinate))
 
 (def rules
   (o/ruleset

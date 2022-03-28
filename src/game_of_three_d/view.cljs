@@ -41,7 +41,10 @@
        [:button {:on-click (state/pause-life interval)}
         "Stop"]
        [:button {:on-click state/start-life}
-        "Start"])]))
+        "Start"])
+     [:button {:disabled (some? interval)
+               :on-click state/restart}
+      "Restart"]]))
 
 (defn hello []
   [:<>
