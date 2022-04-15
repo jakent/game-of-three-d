@@ -29,24 +29,27 @@
   (take n (shuffle coll)))
 
 (defn random-cells [n]
-  (take-rand (* n n n 0.5)
-             (for [x (range n)
-                   y (range n)
-                   z (range n)]
-               (vector x y z))))
+  (->> (for [x (range n)
+             y (range n)
+             #_#_z (range n)]
+         (vector x y 0))
+       (take-rand (* n n 0.5))
+       (move [(/ n -2) (/ n -2) 0])
+       set))
 
 (defn init-cells [session]
   (reduce (fn [session1 coordinate]
-            (o/insert session1 coordinate {::rules/neighbors (set (rules/find-neighbors coordinate))}))
+            (o/insert session1 coordinate {::rules/neighbors (rules/find-neighbors coordinate)}))
           session
-          (move [0 -5 0] (random-cells 10))))
+          (move [0 0 0] glider)))
 
 (defn create-session []
   (-> (reduce o/add-rule (o/->session) rules/rules)
-      ;(o/insert ::rules/settings {::rules/ruleset [2 3 3 3]})
+      (o/insert ::rules/settings {::rules/ruleset [2 3 3 3]})
+      (o/insert ::rules/player {::rules/coordinate [0 0 -10]})
       ;(o/insert ::rules/settings {::rules/ruleset [1 1 3 3]})
 
-      (o/insert ::rules/settings {::rules/ruleset [4 5 5 5]})
+      ;(o/insert ::rules/settings {::rules/ruleset [4 5 5 5]})
       ;(o/insert ::rules/settings {::rules/ruleset [5 6 5 5]})
       ;(o/insert ::rules/settings {::rules/ruleset [5 7 6 6]})
       ;(o/insert ::rules/settings {::rules/ruleset [10 21 10 21]})
@@ -72,7 +75,7 @@
 (defn start-life []
   (tick)
   (swap! app-state assoc :interval (js/setInterval tick
-                                                   100)))
+                                                   50)))
 
 (defn pause-life [interval]
   #(do (js/clearInterval interval)
@@ -80,3 +83,8 @@
 
 (defn restart []
   (swap! app-state assoc :session (create-session)))
+
+(defn on-key-down [event]
+  (swap! app-state update :session
+         (fn [session] (o/fire-rules
+                         (o/insert session ::rules/keyboard ::rules/key (.-keyCode event))))))

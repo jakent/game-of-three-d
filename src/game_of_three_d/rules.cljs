@@ -2,26 +2,50 @@
   (:require [odoyle.rules :as o]))
 
 (defn find-neighbors-2d [[x y z]]
-  (for [x2 [-1 0 1]
-        y2 [-1 0 1]
-        :when (not= x2 y2 0)]
-    (vector (+ x x2) (+ y y2) (or z 0))))
+  (set (for [x2 [-1 0 1]
+             y2 [-1 0 1]
+             :when (not= x2 y2 0)]
+         (vector (+ x x2) (+ y y2) (or z 0)))))
 
 (defn find-neighbors-3d [[x y z]]
-  (for [x2 [-1 0 1]
-        y2 [-1 0 1]
-        z2 [-1 0 1]
-        :when (not= x2 y2 z2 0)]
-    (vector (+ x x2) (+ y y2) (+ z z2))))
+  (set (for [x2 [-1 0 1]
+             y2 [-1 0 1]
+             z2 [-1 0 1]
+             :when (not= x2 y2 z2 0)]
+         (vector (+ x x2) (+ y y2) (+ z z2)))))
 
 (defn find-neighbors [coordinate]
-  (find-neighbors-3d coordinate))
+  (find-neighbors-2d coordinate))
 
 (def rules
   (o/ruleset
     {::time
      [:what
       [::time ::total total]]
+
+     ::player
+     [:what
+      [::player ::coordinate coordinate]]
+
+     ::keyboard
+     [:what
+      [::keyboard ::key k]
+      [::player ::coordinate coordinate {:then false}]
+      :then
+      (let [[x y z] coordinate]
+        (println "keydown" k coordinate (case k
+                                          87 [(inc x) y z]
+                                          83 [(dec x) y z]
+                                          64 [x y (dec z)]
+                                          68 [x y (inc z)]
+                                          nil))
+        (some->> (case k
+                   87 [(inc x) y z]
+                   83 [(dec x) y z]
+                   65 [x y (dec z)]
+                   68 [x y (inc z)]
+                   nil)
+                 (o/insert! ::player ::coordinate)))]
 
      ::cells
      [:what
@@ -32,8 +56,8 @@
             census (->> (mapcat :neighbors cells)
                         frequencies)]
         (println ::cells {:living living :census census})
-        (-> (o/insert! ::derived {::living living
-                                  ::census census})))]
+        (o/insert! ::derived {::living living
+                              ::census census}))]
 
      ::suffocate
      [:what
@@ -73,7 +97,7 @@
                   (if (and (<= (nth ruleset 2) alive-neighbors (nth ruleset 3))
                            (not (living coordinate)))
                     (do (println ::born coordinate)
-                        (o/insert session coordinate ::neighbors (set (find-neighbors coordinate))))
+                        (o/insert session coordinate ::neighbors (find-neighbors coordinate)))
                     session))
                 o/*session*
                 census))]}))
