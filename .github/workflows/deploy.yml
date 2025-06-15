@@ -10,20 +10,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build application
-        run: npm run release
+      - uses: docker://timbru31/java-node:latest
+      - uses: actions/checkout@v4
+      - name: Install dependencies and build
+        run: npm install --force && npm run release
 
       - name: Deploy to Digital Ocean
         uses: appleboy/ssh-action@v1.0.0
