@@ -43,10 +43,10 @@
 
 (defn create-session []
   (-> (reduce o/add-rule (o/->session) rules/rules)
-      ;(o/insert ::rules/settings {::rules/ruleset [2 3 3 3]})
+      (o/insert ::rules/settings {::rules/ruleset [2 3 3 3]})
       ;(o/insert ::rules/settings {::rules/ruleset [1 1 3 3]})
 
-      (o/insert ::rules/settings {::rules/ruleset [4 5 5 5]})
+      ;(o/insert ::rules/settings {::rules/ruleset [4 5 5 5]})
       ;(o/insert ::rules/settings {::rules/ruleset [5 6 5 5]})
       ;(o/insert ::rules/settings {::rules/ruleset [5 7 6 6]})
       ;(o/insert ::rules/settings {::rules/ruleset [10 21 10 21]})

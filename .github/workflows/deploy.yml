@@ -1,0 +1,80 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:    # allows manual trigger
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build application
+        run: npm run release
+
+      - name: Deploy to Digital Ocean
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # Create backup of current deployment
+            if [ -d "/root/dock-ops/static-sites/game-of-three-d" ]; then
+              cp -r /root/dock-ops/static-sites/game-of-three-d /root/dock-ops/static-sites/game-of-three-d.backup.$(date +%Y%m%d_%H%M%S)
+            fi
+            
+            # Create directory if it doesn't exist
+            mkdir -p /root/dock-ops/static-sites/game-of-three-d
+            
+            # Clear existing files
+            rm -rf /root/dock-ops/static-sites/game-of-three-d/*
+
+      - name: Copy build files to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "resources/public/*"
+          target: "/root/dock-ops/static-sites/game-of-three-d/"
+          strip_components: 1  # removes the 'dist' folder from the path
+
+#      - name: Update main site navigation
+#        uses: appleboy/ssh-action@v1.0.0
+#        with:
+#          host: ${{ secrets.DROPLET_HOST }}
+#          username: ${{ secrets.DROPLET_USERNAME }}
+#          key: ${{ secrets.SSH_PRIVATE_KEY }}
+#          script: |
+#            # Check if game link already exists in main site
+#            if ! grep -q "/game-of-three-d/" /root/dock-ops/static-sites/main-site/index.html; then
+#              # Add game link to main site (before the "Coming Soon" section)
+#              sed -i 's|<a href="/blog/" class="app-link">Blog</a>|<a href="/blog/" class="app-link">Blog</a>\n        <a href="/game-of-three-d/" class="app-link">Game of Three D</a>|' /root/dock-ops/static-sites/main-site/index.html
+#            fi
+#
+#      - name: Verify deployment
+#        uses: appleboy/ssh-action@v1.0.0
+#        with:
+#          host: ${{ secrets.DROPLET_HOST }}
+#          username: ${{ secrets.DROPLET_USERNAME }}
+#          key: ${{ secrets.SSH_PRIVATE_KEY }}
+#          script: |
+#            echo "Deployment completed!"
+#            echo "Files in game directory:"
+#            ls -la /root/dock-ops/static-sites/game-of-three-d/
+#            echo "Testing nginx config..."
+#            cd /root/dock-ops && docker compose exec nginx nginx -t

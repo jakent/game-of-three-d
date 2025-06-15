@@ -15,7 +15,7 @@
     (vector (+ x x2) (+ y y2) (+ z z2))))
 
 (defn find-neighbors [coordinate]
-  (find-neighbors-3d coordinate))
+  (find-neighbors-2d coordinate))
 
 (def rules
   (o/ruleset
